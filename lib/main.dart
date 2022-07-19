@@ -10,6 +10,7 @@ import 'package:provider/provider.dart';
 
 void main() async {
   DataWrapper wrapper = DataWrapper();
+  print("loading");
   await wrapper.loadInitial();
 
   runApp(ChangeNotifierProvider(
@@ -63,16 +64,42 @@ class MyHomePage extends StatefulWidget {
 
 enum PageType { main, rewards }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   PageType currentPage = PageType.main;
 
-  void togglePage() {
+  void togglePage() async {
     setState(() {
+      Provider.of<DataWrapper>(context, listen: false).checkReward();
       currentPage =
           currentPage == PageType.main ? PageType.rewards : PageType.main;
     });
   }
-  
+
+  @override
+  void initState() {
+    WidgetsBinding.instance!.addObserver(this);
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance!.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    switch (state) {
+      case AppLifecycleState.resumed:
+        print('appLifeCycleState resumed');
+        Provider.of<DataWrapper>(context, listen: false).checkReward();
+        break;
+      default:
+        break;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     // _clearStorage();
@@ -95,9 +122,7 @@ class _MyHomePageState extends State<MyHomePage> {
             )
           ],
         ),
-        body:  currentPage == PageType.main
-                  ? MainPage()
-                  : RewardsPage();
+        body: currentPage == PageType.main ? MainPage() : RewardsPage());
   }
 
   Widget _loading() {

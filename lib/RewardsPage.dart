@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'DataModel.dart';
+import 'package:provider/provider.dart';
 
 class RewardsPage extends StatefulWidget {
   const RewardsPage({Key? key}) : super(key: key);
@@ -17,23 +18,27 @@ class _RewardsPageState extends State<RewardsPage> {
   }
 
   Widget _listView() {
-    return ListView.builder(
-        shrinkWrap: true,
-        itemCount: widget.rewards.rewards.length + 1,
-        itemBuilder: (BuildContext ctx, index) {
-          return Dismissible(
-              key: UniqueKey(),
-              direction: DismissDirection.endToStart,
-              onDismissed: (_) {
-                widget.removeReward(index);
-              },
-              child: _card(index),
-              background: _background());
-        });
+    DataWrapper wrapper = context.read<DataWrapper>();
+    return Consumer<DataWrapper>(builder: (context, wrapper, _) {
+      return ListView.builder(
+          shrinkWrap: true,
+          itemCount: wrapper.rewardCount + 1,
+          itemBuilder: (BuildContext ctx, index) {
+            return Dismissible(
+                key: UniqueKey(),
+                direction: DismissDirection.endToStart,
+                onDismissed: (_) {
+                  wrapper.removeReward(index);
+                },
+                child: _card(index),
+                background: _background());
+          });
+    });
   }
 
   Widget _card(int index) {
-    if (index == widget.rewards.rewards.length) {
+    DataWrapper wrapper = context.read<DataWrapper>();
+    if (index == wrapper.rewardCount) {
       return _plus();
     }
 
@@ -41,9 +46,9 @@ class _RewardsPageState extends State<RewardsPage> {
       margin: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
       child: ListTile(
         leading: CircleAvatar(
-          child: Text(widget.rewards.rewards[index]),
-        ),
-        title: Text(widget.rewards.rewards[index]),
+            // child: Text(wrapper.rewards[index]),
+            ),
+        title: Text(wrapper.rewards[index]),
         // subtitle: Text("\$${myProducts[index]["price"].toString()}"),
         trailing: const Icon(Icons.delete_sweep),
       ),
@@ -81,6 +86,7 @@ class _RewardsPageState extends State<RewardsPage> {
   }
 
   void _submit(String value) {
-    widget.addReward(value);
+    addController.text = '';
+    Provider.of<DataWrapper>(context, listen: false).addReward(value);
   }
 }

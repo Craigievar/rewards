@@ -38,17 +38,27 @@ class RewardHistory {
 }
 
 class DataWrapper extends ChangeNotifier {
-  static LocalStorage storage = new LocalStorage('rewards_app');
+  LocalStorage storage = new LocalStorage('rewards_app');
 
   RewardList _rewards = RewardList();
   RewardHistory _history = RewardHistory();
   RewardDay? today;
+  bool verbose = false;
+  bool ready = false;
 
   List<String> get rewards => _rewards.rewards;
-  String? get currentReward => today?.reward;
+  String? get currentReward {
+    logIfVerbose(today.toString());
+    return today?.reward;
+  }
+
   int get rewardCount => _rewards.rewards.length;
 
   Future<void> loadInitial() async {
+    storage.ready.then((_) => loadData());
+  }
+
+  Future<void> loadData() async {
     var savedRewards = storage.getItem('rewards');
     var savedHistory = storage.getItem('history');
 
@@ -61,11 +71,17 @@ class DataWrapper extends ChangeNotifier {
           (day) => RewardDay(reward: day['reward'], isoDate: day['isoDate'])));
     }
 
-    _checkReward();
+    checkReward();
+
+    logIfVerbose(_rewards.rewards.toString());
+    logIfVerbose(_history.days.toString());
+    logIfVerbose(today.toString());
+
+    ready = true;
+    notifyListeners();
   }
 
-  void _checkReward() {
-    print("Checking reward");
+  void checkReward() {
     var iso = _isoDate();
     today = _history.days.firstWhereOrNull((e) => e.isoDate == iso);
 
@@ -77,13 +93,11 @@ class DataWrapper extends ChangeNotifier {
                 _rewards.rewards[Random().nextInt(_rewards.rewards.length)]);
 
         _history.days.add(today!);
-        print("Reward was not set, now: " + today!.reward.toString());
+        storage.setItem('history', _history.toJSONEncodable());
       }
-    } else {
-      print("Reward set: " + today!.reward.toString());
-    }
 
-    notifyListeners();
+      notifyListeners();
+    }
   }
 
   String _isoDate() {
@@ -93,12 +107,22 @@ class DataWrapper extends ChangeNotifier {
   }
 
   void addReward(String reward) {
+    logIfVerbose("In addreward");
     _rewards.rewards.add(reward);
+    storage.setItem('rewards', _rewards.toJSONEncodable());
     notifyListeners();
   }
 
   void removeReward(int index) {
+    logIfVerbose("In removeward");
     _rewards.rewards.removeAt(index);
+    storage.setItem('rewards', _rewards.toJSONEncodable());
     notifyListeners();
+  }
+
+  void logIfVerbose(String msg) {
+    if (verbose) {
+      print(msg);
+    }
   }
 }
