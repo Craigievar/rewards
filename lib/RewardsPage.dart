@@ -14,7 +14,11 @@ class _RewardsPageState extends State<RewardsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(height: double.maxFinite, child: _listView());
+    return Column(children: [
+      SizedBox(height: 10),
+      Text("Add rewards for yourself!"),
+      Expanded(child: Container(child: _listView()))
+    ]);
   }
 
   Widget _listView() {
@@ -22,7 +26,7 @@ class _RewardsPageState extends State<RewardsPage> {
     return Consumer<DataWrapper>(builder: (context, wrapper, _) {
       return ListView.builder(
           shrinkWrap: true,
-          itemCount: wrapper.rewardCount + 1,
+          itemCount: wrapper.rewardCount + 2,
           itemBuilder: (BuildContext ctx, index) {
             return Dismissible(
                 key: UniqueKey(),
@@ -40,6 +44,9 @@ class _RewardsPageState extends State<RewardsPage> {
     DataWrapper wrapper = context.read<DataWrapper>();
     if (index == wrapper.rewardCount) {
       return _plus();
+    }
+    if (index == wrapper.rewardCount + 1) {
+      return _debug();
     }
 
     return Card(
@@ -83,6 +90,19 @@ class _RewardsPageState extends State<RewardsPage> {
                 },
               ),
             )));
+  }
+
+  Widget _debug() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        TextButton(
+            onPressed: () =>
+                Provider.of<DataWrapper>(context, listen: false).clearData(),
+            child: Text("Delete data")),
+      ],
+    );
   }
 
   void _submit(String value) {

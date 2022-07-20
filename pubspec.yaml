@@ -29,6 +29,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+    assets: 
+      - graphics/
   localstorage: ^4.0.0+1
 
 

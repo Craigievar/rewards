@@ -69,7 +69,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
 
   void togglePage() async {
     setState(() {
-      Provider.of<DataWrapper>(context, listen: false).checkReward();
+      // Provider.of<DataWrapper>(context, listen: false).checkReward();
       currentPage =
           currentPage == PageType.main ? PageType.rewards : PageType.main;
     });
@@ -93,7 +93,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     switch (state) {
       case AppLifecycleState.resumed:
         print('appLifeCycleState resumed');
-        Provider.of<DataWrapper>(context, listen: false).checkReward();
+        // Provider.of<DataWrapper>(context, listen: false).checkReward();
         break;
       default:
         break;
