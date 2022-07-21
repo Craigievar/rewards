@@ -23,7 +23,12 @@ class _MainPageState extends State<MainPage> {
           color: Colors.blueGrey.shade400,
           child: Column(children: [
             SizedBox(height: 10),
-            Center(child: Text("Do a behavior for today's reward!")),
+            Center(
+                child: Text(wrapper.rewardAvailable
+                    ? "Do a behavior for today's reward!"
+                    : wrapper.rewardOpened
+                        ? "Do another behavior to reroll your reward"
+                        : "Open your reward!")),
             SizedBox(height: 10),
             Wrap(
                 spacing: 4,
@@ -37,16 +42,18 @@ class _MainPageState extends State<MainPage> {
                           height: 50,
                           child: TextButton(
                               style: ButtonStyle(
-                                  backgroundColor:
-                                      MaterialStateProperty.all<Color>(
+                                  backgroundColor: wrapper.actions[index].done
+                                      ? MaterialStateProperty.all<Color>(
+                                          Colors.blue.shade300)
+                                      : MaterialStateProperty.all<Color>(
                                           Colors.white60)),
-                              child: Text(wrapper.actions[index]),
+                              child: Text(wrapper.actions[index].action),
                               onLongPress: () {
                                 wrapper.removeAction(index);
                               },
                               onPressed: () {
                                 print("pressed");
-                                wrapper.checkReward(create: true);
+                                wrapper.actionPressed(index);
                               }))),
                 ]),
             Center(
@@ -78,10 +85,11 @@ class _MainPageState extends State<MainPage> {
                       (Widget child, Animation<double> animation) {
                     return ScaleTransition(scale: animation, child: child);
                   },
-                  child: !wrapper.rewardSet
+                  child: !wrapper.rewardAvailable
                       ? _unearnedReward()
                       : wrapper.rewardOpened
-                          ? _openedReward(wrapper.currentReward!)
+                          ? _openedReward(wrapper.currentReward!,
+                              wrapper.totalActions > wrapper.openedRewards)
                           : _unopenedReward())
               // Center(
               //     child: GestureDetector(
@@ -132,13 +140,19 @@ class _MainPageState extends State<MainPage> {
     addController.clear();
   }
 
-  Widget _openedReward(String reward) {
+  Widget _openedReward(String reward, bool rerollable) {
     return Center(
         key: ValueKey<int>(1),
         child: GestureDetector(
             onTap: () {
-              Provider.of<DataWrapper>(context, listen: false).closeReward();
+              // Provider.of<DataWrapper>(context, listen: false).closeReward();
             },
+            onLongPress: rerollable
+                ? () {
+                    Provider.of<DataWrapper>(context, listen: false)
+                        .reRollReward();
+                  }
+                : () {},
             child: Container(
                 width: 300.0,
                 height: 300.0,
@@ -148,7 +162,11 @@ class _MainPageState extends State<MainPage> {
                 ),
                 child: Center(
                     child: Text(
-                  "Today's Reward:\n" + reward,
+                  "Today's Reward:\n" +
+                      reward +
+                      (rerollable
+                          ? "\n\nHold to Reroll"
+                          : "\n\nDo more to earn rerolls!"),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.white70,

@@ -4,13 +4,27 @@ import 'package:collection/collection.dart';
 import 'dart:math';
 import 'package:intl/intl.dart';
 
-class ActionList {
-  List<String> actions = [];
-  ActionList();
+class Action {
+  String action = '';
+  bool done = false;
+
+  Action({required this.action, required this.done});
+
   toJSONEncodable() {
     Map<String, dynamic> m = new Map();
-    m['actions'] = actions;
+    m['action'] = action;
+    m['done'] = done;
     return m;
+  }
+}
+
+class ActionList {
+  List<Action> actions = [];
+  ActionList();
+  toJSONEncodable() {
+    return actions.map((item) {
+      return item.toJSONEncodable();
+    }).toList();
   }
 }
 
@@ -28,8 +42,13 @@ class RewardDay {
   String reward;
   String isoDate;
   bool opened;
+  int openedRewards;
 
-  RewardDay({required this.reward, required this.isoDate, this.opened = false});
+  RewardDay(
+      {required this.reward,
+      required this.isoDate,
+      this.opened = false,
+      this.openedRewards = 0});
 
   toJSONEncodable() {
     Map<String, dynamic> m = new Map();
@@ -61,13 +80,17 @@ class DataWrapper extends ChangeNotifier {
   bool ready = false;
 
   List<String> get rewards => _rewards.rewards;
-  List<String> get actions => _actions.actions;
+  List<Action> get actions => _actions.actions;
   String? get currentReward {
     logIfVerbose(today.toString());
     return today?.reward;
   }
 
-  bool get rewardSet => today != null;
+  int get totalActions => _actions.actions.where((a) => a.done).length;
+  int get openedRewards => today?.openedRewards ?? 0;
+
+  bool get rewardAvailable =>
+      totalActions > openedRewards || (today?.opened ?? false);
   bool get rewardOpened => today?.opened ?? false;
 
   int get rewardCount => _rewards.rewards.length;
@@ -94,7 +117,10 @@ class DataWrapper extends ChangeNotifier {
     }
     if (savedActions != null) {
       _actions.actions =
-          List<String>.from((savedActions['actions'] as List).map((r) => r));
+          List<Action>.from((savedActions['actions'] as List).map((a) => Action(
+                action: a['action'],
+                done: a['done'],
+              )));
     }
 
     checkReward();
@@ -111,6 +137,7 @@ class DataWrapper extends ChangeNotifier {
     var iso = _isoDate();
     today = _history.days.firstWhereOrNull((e) => e.isoDate == iso);
     if (today == null) {
+      print("making today");
       if (_rewards.rewards.length > 0 && create) {
         today = new RewardDay(
             isoDate: iso,
@@ -119,6 +146,7 @@ class DataWrapper extends ChangeNotifier {
 
         _history.days.add(today!);
         storage.setItem('history', _history.toJSONEncodable());
+        resetActionStatus();
       }
 
       notifyListeners();
@@ -149,7 +177,7 @@ class DataWrapper extends ChangeNotifier {
     if (_actions.actions.length >= 6) {
       return;
     }
-    _actions.actions.add(action);
+    _actions.actions.add(Action(action: action, done: false));
     storage.setItem('actions', _actions.toJSONEncodable());
     notifyListeners();
   }
@@ -167,11 +195,17 @@ class DataWrapper extends ChangeNotifier {
   }
 
   void openReward() {
+    checkReward(create: true);
+    print(today);
     if (today == null) {
       return;
     }
 
+    print("rewarrd opened");
+
+    today!.openedRewards++;
     today!.opened = true;
+
     storage.setItem('history', _history.toJSONEncodable());
     notifyListeners();
   }
@@ -182,13 +216,46 @@ class DataWrapper extends ChangeNotifier {
     }
 
     today!.opened = false;
+    today!.openedRewards--;
     storage.setItem('history', _history.toJSONEncodable());
     notifyListeners();
+  }
+
+  void reRollReward() {
+    print("reorlling");
+    today!.opened = false;
+    today!.reward = _rewards.rewards[Random().nextInt(_rewards.rewards.length)];
+    notifyListeners();
+  }
+
+  void resetActionStatus() {
+    _actions.actions.forEach((element) {
+      element.done = false;
+    });
+
+    storage.setItem('actions', _actions.toJSONEncodable());
   }
 
   void clearData() async {
     print("clear datta");
     await storage.clear();
     loadInitial();
+    notifyListeners();
+  }
+
+  void actionPressed(int index) {
+    Action action = _actions.actions[index];
+    if (action.done) {
+      action.done = false;
+    } else {
+      action.done = true;
+    }
+
+    print(rewardAvailable);
+    print(totalActions);
+
+    storage.setItem('history', _history.toJSONEncodable());
+    storage.setItem('actions', _actions.toJSONEncodable());
+    notifyListeners();
   }
 }

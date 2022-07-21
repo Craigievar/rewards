@@ -106,6 +106,9 @@ class _RewardsPageState extends State<RewardsPage> {
   }
 
   void _submit(String value) {
+    if (value.isEmpty) {
+      return;
+    }
     addController.text = '';
     Provider.of<DataWrapper>(context, listen: false).addReward(value);
   }
